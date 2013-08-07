@@ -18,6 +18,14 @@ class _ValueProvider implements Provider {
   }
 }
 
+class _ProxyProvider implements Provider {
+  Function providerFn;
+  _ProxyProvider(this.providerFn);
+  dynamic get(getInstanceBySymbol, error) {
+    return providerFn(getInstanceBySymbol, error);
+  }
+}
+
 
 class _TypeProvider implements Provider {
   final ClassMirror classMirror;
@@ -28,30 +36,31 @@ class _TypeProvider implements Provider {
         this.classMirror = getClassMirrorBySymbol(typeName);
 
   dynamic get(getInstanceBySymbol, error) {
-
-    if (classMirror is TypedefMirror) {
-      throw new NoProviderError(error('No implementation provided '
-          'for ${getSymbolName(classMirror.qualifiedName)} typedef!'));
-    }
-
-    MethodMirror ctor = classMirror.constructors[classMirror.simpleName];
-
-    resolveArgument(ParameterMirror p) {
-      return getInstanceBySymbol(p.type.qualifiedName);
-    }
-
-    var positionalArgs = ctor.parameters.map(resolveArgument).toList();
-    var namedArgs = null;
-
-    try {
-      return classMirror.newInstance(ctor.constructorName, positionalArgs,
-          namedArgs).reflectee;
-    } catch (e) {
-      if (e is MirroredUncaughtExceptionError) {
-        throw "${e}\nORIGINAL STACKTRACE\n${e.stacktrace}";
+    return time('_TypeProvider.get', () {
+      if (classMirror is TypedefMirror) {
+        throw new NoProviderError(error('No implementation provided '
+                                        'for ${getSymbolName(classMirror.qualifiedName)} typedef!'));
       }
-      throw;
-    }
+
+      MethodMirror ctor = classMirror.constructors[classMirror.simpleName];
+
+      resolveArgument(ParameterMirror p) {
+        return getInstanceBySymbol(p.type.qualifiedName);
+      }
+
+      var positionalArgs = ctor.parameters.map(resolveArgument).toList();
+      var namedArgs = null;
+
+      try {
+        return classMirror.newInstance(ctor.constructorName, positionalArgs,
+            namedArgs).reflectee;
+      } catch (e) {
+        if (e is MirroredUncaughtExceptionError) {
+          throw "${e}\nORIGINAL STACKTRACE\n${e.stacktrace}";
+        }
+        rethrow;
+      }
+    });
   }
 }
 
@@ -78,7 +87,7 @@ class _FactoryProvider implements Provider {
       if (e is MirroredUncaughtExceptionError) {
         throw "${e}\nORIGINAL STACKTRACE\n${e.stacktrace}";
       }
-      throw;
+      rethrow;
     }
   }
 }

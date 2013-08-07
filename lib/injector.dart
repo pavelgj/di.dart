@@ -1,5 +1,11 @@
 part of di;
 
+Map<Symbol, Provider> _customTypeProviderRegistry = new Map<Symbol, Provider>();
+
+registerTypeProvider(Type type, provider) {
+  _customTypeProviderRegistry[getTypeSymbol(type)] = new _ProxyProvider(provider);
+}
+
 class Injector {
   final bool allowImplicitInjection;
 
@@ -92,7 +98,7 @@ class Injector {
       });
     } catch(e) {
       resolving.clear();
-      throw;
+      rethrow;
     }
     if (cache) {
       providerWithInjector.injector.instances[typeName] = value;
@@ -114,7 +120,11 @@ class Injector {
   /// Returns a pair for provider and the injector where it's defined.
   _ProviderWithDefiningInjector _getProviderForSymbol(Symbol typeName) {
     if (providers.containsKey(typeName)) {
-      return new _ProviderWithDefiningInjector(providers[typeName], this);
+      var provider = providers[typeName];
+      if (_customTypeProviderRegistry.containsKey(typeName)) {
+        provider = _customTypeProviderRegistry[typeName];
+      }
+      return new _ProviderWithDefiningInjector(provider, this);
     }
 
     if (parent != null) {
@@ -127,8 +137,11 @@ class Injector {
     }
 
     // create a provider for implicit types
-    return new _ProviderWithDefiningInjector(
-        new _ProviderMetadata(new _TypeProvider(typeName)), this);
+    var provider = new _TypeProvider(typeName);
+    if (_customTypeProviderRegistry.containsKey(typeName)) {
+      provider = _customTypeProviderRegistry[typeName];
+    }
+    return new _ProviderWithDefiningInjector(new _ProviderMetadata(provider), this);
   }
 
   void _checkTypeConditions(Symbol typeName) {
@@ -154,7 +167,7 @@ class Injector {
    * the token ([Type]) is instantiated.
    */
   dynamic get(Type type) {
-    return _getInstanceBySymbol(getTypeSymbol(type), requester: this);
+    return time('injector.get', () => _getInstanceBySymbol(getTypeSymbol(type), requester: this));
   }
 
   /**
@@ -211,7 +224,7 @@ class Injector {
       if (e is MirroredUncaughtExceptionError) {
         throw "${e}\nORIGINAL STACKTRACE\n${e.stacktrace}";
       }
-      throw;
+      rethrow;
     }
 
   }
@@ -246,6 +259,8 @@ class Injector {
     return new Injector._fromParent(modules, this);
   }
 }
+
+
 
 class _ProviderWithDefiningInjector {
   final _ProviderMetadata provider;

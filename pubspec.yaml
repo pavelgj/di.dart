@@ -1,8 +1,9 @@
 name: di
-description: A prototype of Dependency Injection framework.
 version: 0.0.16
-author: "Vojta Jina <vojta.jina@gmail.com>"
+author: Vojta Jina <vojta.jina@gmail.com>
+description: A prototype of Dependency Injection framework.
 homepage: https://github.com/angular/di.dart
-
 dev_dependencies:
+  benchmark_harness: any
+  browser: any
   unittest: any

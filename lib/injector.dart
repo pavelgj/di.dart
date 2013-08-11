@@ -49,6 +49,7 @@ class Injector {
   dynamic _getInstanceBySymbol(Symbol typeName, {bool cache: true,
       bool direct: false, Map<Type, dynamic> locals, getInstanceBySymbol,
       Injector requester}) {
+    return time('Injector._getInstanceBySymbol', () {
     _checkTypeConditions(typeName);
 
     if (resolving.contains(typeName)) {
@@ -98,6 +99,7 @@ class Injector {
       providerWithInjector.injector.instances[typeName] = value;
     }
     return value;
+    });
   }
 
   /**
@@ -154,7 +156,9 @@ class Injector {
    * the token ([Type]) is instantiated.
    */
   dynamic get(Type type) {
+    return time('Injector.get', () {
     return _getInstanceBySymbol(getTypeSymbol(type), requester: this);
+    });
   }
 
   /**

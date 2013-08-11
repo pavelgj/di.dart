@@ -28,7 +28,7 @@ class _TypeProvider implements Provider {
         this.classMirror = getClassMirrorBySymbol(typeName);
 
   dynamic get(getInstanceBySymbol, error) {
-
+    return time('  _TypeProvider.get', () {
     if (classMirror is TypedefMirror) {
       throw new NoProviderError(error('No implementation provided '
           'for ${getSymbolName(classMirror.qualifiedName)} typedef!'));
@@ -52,6 +52,7 @@ class _TypeProvider implements Provider {
       }
       rethrow;
     }
+    });
   }
 }
 
@@ -62,6 +63,7 @@ class _FactoryProvider implements Provider {
   _FactoryProvider(Function this.factoryFn);
 
   dynamic get(getInstanceBySymbol, error) {
+    return time('  _FactoryProvider.get', () {
     ClosureMirror cm = reflect(factoryFn);
     MethodMirror mm = cm.function;
 
@@ -80,5 +82,6 @@ class _FactoryProvider implements Provider {
       }
       rethrow;
     }
+    });
   }
 }

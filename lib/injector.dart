@@ -23,6 +23,7 @@ class Injector {
 
   Injector._fromParent(List<Module> modules, Injector this.parent,
       {bool this.allowImplicitInjection: true}) {
+    time('new Injector', () {
     if (modules == null) {
       modules = <Module>[];
     }
@@ -32,6 +33,7 @@ class Injector {
     Module injectorModule = new Module();
     injectorModule.value(Injector, this);
     providers.addAll(injectorModule._mappings);
+    });
   }
 
   String _error(message, [appendDependency]) {
@@ -232,6 +234,7 @@ class Injector {
   // TODO(vojta): fix this hackery of passing list of Symbol or Type
   Injector createChild(List<Module> modules,
       [List<dynamic> forceNewInstances]) {
+    return time('Injector.createChild', () {
     if (forceNewInstances != null) {
       Module forceNew = new Module();
       forceNewInstances.forEach((typeOrSymbol) {
@@ -248,6 +251,7 @@ class Injector {
     }
 
     return new Injector._fromParent(modules, this);
+    });
   }
 }
 

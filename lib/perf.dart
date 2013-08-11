@@ -34,11 +34,11 @@ time(desc, fn) {
   return val;
 }
 
-bool _useCsvOutputForStats = true;
+bool useCsvOutputForStats = true;
 
 dumpTimerStats() {
   print('------------------------');
-  if (_useCsvOutputForStats) {
+  if (useCsvOutputForStats) {
     print('desc;count;total;avg;min;max');
     stats.forEach((desc, stat) {
       print('$desc;${stat.count};${stat.total};${stat.avg};${stat.min};${stat.max}');

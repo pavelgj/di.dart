@@ -78,7 +78,7 @@ class Injector {
     return '$message (resolving $graph)';
   }
 
-  dynamic _getInstanceByType(Type typeName, Injector requester) {
+  ProvidedValue _getInstanceByType(Type typeName, Injector requester) {
     _checkTypeConditions(typeName);
 
     if (resolving.contains(typeName)) {
@@ -93,10 +93,15 @@ class Injector {
         provider.visibility(requester, injector) :
         _defaultVisibility(requester, injector);
 
-    if (visible && instances.containsKey(typeName)) {
-      return instances[typeName];
+    if (requester != this && providerWithInjector.provider.private == true) {
+      return new ProvidedValue(null, true); // private
     }
 
+    if (visible && instances.containsKey(typeName)) {
+      return new ProvidedValue(instances[typeName]);
+    }
+
+    bool private = false;
     if (providerWithInjector.injector != this || !visible) {
       if (!visible) {
         if (injector.parent == null) {
@@ -106,7 +111,11 @@ class Injector {
         injector =
             injector.parent._getProviderWithInjectorForType(typeName).injector;
       }
-      return injector._getInstanceByType(typeName, requester);
+      var value = injector._getInstanceByType(typeName, requester);
+      private = requester == this && value.private;
+      if (!private) {
+        return value;
+      }
     }
 
     var value;
@@ -125,8 +134,12 @@ class Injector {
     }
 
     // cache the value.
-    providerWithInjector.injector.instances[typeName] = value;
-    return value;
+    if (private) {
+      instances[typeName] = value;
+    } else {
+      providerWithInjector.injector.instances[typeName] = value;
+    }
+    return new ProvidedValue(value);
   }
 
   /// Returns a pair for provider and the injector where it's defined.
@@ -170,7 +183,7 @@ class Injector {
    * If there is no parent injector, an implicit binding is used. That is,
    * the token ([Type]) is instantiated.
    */
-  dynamic get(Type type) => _getInstanceByType(type, this);
+  dynamic get(Type type) => _getInstanceByType(type, this).value;
 
   /**
    * Create a child injector.
@@ -206,9 +219,18 @@ class Injector {
     throw new UnimplementedError('This method must be overriden.');
   }
 
-  Object newInstanceOf(Type type, ObjectFactory factory, Injector requestor,
+  ProvidedValue newInstanceOf(Type type, ObjectFactory factory, Injector requestor,
                        errorHandler(message, [appendDependency])) {
     throw new UnimplementedError('This method must be overriden.');
+  }
+}
+
+class ProvidedValue {
+  final dynamic value;
+  final bool private;
+
+  ProvidedValue(this.value, [this.private = false]) {
+    if (value is ProvidedValue) throw 'oops';
   }
 }
 

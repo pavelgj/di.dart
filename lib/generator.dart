@@ -63,13 +63,13 @@ String printLibraryCode(Map<String, String> typeToImport, List<String> imports,
     StringBuffer factory = new StringBuffer();
     bool skip = false;
     factory.write(
-        'typeFactories[${resolveClassIdentifier(clazz.type)}] = (f) => ');
-    factory.write('new ${resolveClassIdentifier(clazz.type)}(');
+        'typeFactories[${resolveClassIdentifier(clazz.type)}] = (f) {\n');
     ConstructorElement constr =
         clazz.constructors.firstWhere((c) => c.name.isEmpty,
         orElse: () {
           throw 'Unable to find default constructor for $clazz in ${clazz.source}';
         });
+    var i = 0;
     factory.write(constr.parameters.map((param) {
       if (param.type.element is! ClassElement) {
         throw 'Unable to resolve type for constructor parameter '
@@ -79,9 +79,17 @@ String printLibraryCode(Map<String, String> typeToImport, List<String> imports,
         print('WARNING: parameterized types are not supported: $param in $clazz in ${clazz.source}. Skipping!');
         skip = true;
       }
-      return 'f(${resolveClassIdentifier(param.type)})';
-    }).join(', '));
-    factory.write(');\n');
+      i++;
+      return '\tvar p$i = f(${resolveClassIdentifier(param.type)});\n';
+    }).join(''));
+    factory.write('\treturn new ${resolveClassIdentifier(clazz.type)}(');
+    for (i = 1; i <= constr.parameters.length; i++) {
+      factory.write('p$i.value');
+      if (i < constr.parameters.length) {
+        factory.write(', ');
+      }
+    }
+    factory.write(');\n};\n');
     if (!skip) {
       factories.write(factory);
     }

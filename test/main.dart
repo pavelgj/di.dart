@@ -558,6 +558,36 @@ createInjectorSpec(String injectorName, InjectorFactory injectorFactory) {
 
     });
 
+    ddescribe('private', () {
+
+      it('should force new instanced on the requesting injector for private bindings', () {
+        var module = new Module()
+          ..type(Engine, private: true);
+
+        var injector = injectorFactory([module]);
+        expect(injector.get(Engine), new isInstanceOf<Engine>());
+        expect(injector.get(Engine), same(injector.get(Engine)));
+
+        var childInjector = injector.createChild([]);
+        expect(childInjector.get(Engine), not(same(injector.get(Engine))));
+      });
+
+
+      it('should make bindings transitively private', () {
+        var module = new Module()
+          ..type(Engine, private: true)
+          ..type(Car);
+
+        var injector = injectorFactory([module]);
+        expect(injector.get(Car), new isInstanceOf<Car>());
+        expect(injector.get(Car), same(injector.get(Car)));
+
+        var childInjector = injector.createChild([]);
+        expect(childInjector.get(Car), not(same(injector.get(Car))));
+      });
+
+    });
+
   });
 
 }

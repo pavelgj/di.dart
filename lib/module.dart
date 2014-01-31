@@ -55,7 +55,8 @@ class Module {
   void value(Type id, value,
       {CreationStrategy creation, Visibility visibility}) {
     _dirty();
-    _providers[id] = new _ValueProvider(value, creation, visibility);
+    _providers[id] = new _ValueProvider(value,
+        creationStrategy: creation, visibility: visibility);
   }
 
   /**
@@ -66,10 +67,11 @@ class Module {
    * implied that [id] should be instantiated.
    */
   void type(Type id, {Type implementedBy, CreationStrategy creation,
-      Visibility visibility}) {
+      Visibility visibility, bool private}) {
     _dirty();
     _providers[id] = new _TypeProvider(
-        implementedBy == null ? id : implementedBy, creation, visibility);
+        implementedBy == null ? id : implementedBy,
+        creationStrategy: creation, visibility: visibility, private: private);
   }
 
   /**
@@ -79,9 +81,10 @@ class Module {
    * The result of that function is the value that will be injected.
    */
   void factory(Type id, FactoryFn factoryFn,
-      {CreationStrategy creation, Visibility visibility}) {
+      {CreationStrategy creation, Visibility visibility, bool private}) {
     _dirty();
-    _providers[id] = new _FactoryProvider(factoryFn, creation, visibility);
+    _providers[id] = new _FactoryProvider(factoryFn,
+        creationStrategy: creation, visibility: visibility, private: private);
   }
 
   /**
@@ -109,36 +112,38 @@ dynamic _defaultCreationStrategy(Injector requesting, Injector defining,
 bool _defaultVisibility(_, __) => true;
 
 
-typedef Object ObjectFactory(Type type, Injector requestor);
+typedef ProvidedValue ObjectFactory(Type type, Injector requestor);
 
 abstract class _Provider {
   final CreationStrategy creationStrategy;
   final Visibility visibility;
+  final bool private;
 
-  _Provider(this.creationStrategy, this.visibility);
+  _Provider(this.creationStrategy, this.visibility, this.private);
 
-  dynamic get(Injector injector, Injector requestor, ObjectFactory getInstanceByType, error);
+  ProvidedValue get(Injector injector, Injector requestor, ObjectFactory getInstanceByType, error);
 }
 
 class _ValueProvider extends _Provider {
-  dynamic value;
+  final ProvidedValue value;
 
-  _ValueProvider(this.value, [CreationStrategy creationStrategy,
-                              Visibility visibility])
-      : super(creationStrategy, visibility);
+  _ValueProvider(value, {CreationStrategy creationStrategy,
+                              Visibility visibility})
+      : value = new ProvidedValue(value),
+        super(creationStrategy, visibility, false);
 
-  dynamic get(Injector injector, Injector requestor, ObjectFactory getInstanceByType, error) =>
+  ProvidedValue get(Injector injector, Injector requestor, ObjectFactory getInstanceByType, error) =>
       value;
 }
 
 class _TypeProvider extends _Provider {
   final Type type;
 
-  _TypeProvider(this.type, [CreationStrategy creationStrategy,
-                            Visibility visibility])
-      : super(creationStrategy, visibility);
+  _TypeProvider(this.type, {CreationStrategy creationStrategy,
+                            Visibility visibility, bool private})
+      : super(creationStrategy, visibility, private);
 
-  dynamic get(Injector injector, Injector requestor, ObjectFactory getInstanceByType, error) =>
+  ProvidedValue get(Injector injector, Injector requestor, ObjectFactory getInstanceByType, error) =>
       injector.newInstanceOf(type, getInstanceByType, requestor, error);
 
 }
@@ -146,10 +151,10 @@ class _TypeProvider extends _Provider {
 class _FactoryProvider extends _Provider {
   final Function factoryFn;
 
-  _FactoryProvider(this.factoryFn, [CreationStrategy creationStrategy,
-                                    Visibility visibility])
-      : super(creationStrategy, visibility);
+  _FactoryProvider(this.factoryFn, {CreationStrategy creationStrategy,
+                                    Visibility visibility, bool private})
+      : super(creationStrategy, visibility, private);
 
-  dynamic get(Injector injector, Injector requestor, getInstanceByType, error) =>
+  ProvidedValue get(Injector injector, Injector requestor, getInstanceByType, error) =>
       factoryFn(injector);
 }

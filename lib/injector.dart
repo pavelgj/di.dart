@@ -98,7 +98,7 @@ class Injector {
     }
 
     if (visible && instances.containsKey(typeName)) {
-      return new ProvidedValue(instances[typeName]);
+      return instances[typeName];
     }
 
     bool private = false;
@@ -120,14 +120,9 @@ class Injector {
 
     var value;
     try {
-      var strategy = provider.creationStrategy != null ?
-          provider.creationStrategy : _defaultCreationStrategy;
-      value = strategy(requester, injector, () {
-        resolving.add(typeName);
-        var val = provider.get(this, requester, _getInstanceByType, _error);
-        resolving.removeLast();
-        return val;
-      });
+      resolving.add(typeName);
+      value = provider.get(this, requester, _getInstanceByType, _error);
+      resolving.removeLast();
     } catch(e) {
       resolving.clear();
       rethrow;
@@ -139,7 +134,7 @@ class Injector {
     } else {
       providerWithInjector.injector.instances[typeName] = value;
     }
-    return new ProvidedValue(value);
+    return value;
   }
 
   /// Returns a pair for provider and the injector where it's defined.
@@ -203,8 +198,7 @@ class Injector {
         var provider = providerWithInjector.provider;
         forceNew.factory(type,
             (Injector inj) => provider.get(this, inj, inj._getInstanceByType,
-                inj._error),
-            creation: provider.creationStrategy,
+                inj._error).value,
             visibility: provider.visibility);
       });
 
